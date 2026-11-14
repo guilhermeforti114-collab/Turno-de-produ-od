@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#10191e">
+<title>Turno de Produção — Simulador 2D</title>
+<style>
+:root{--ink:#edf3ed;--muted:#aab8b1;--panel:#18272c;--line:#43564f;--gold:#e8b65d;--green:#83c2a0;--red:#d77b65}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10191e;color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+#top{position:fixed;top:0;left:0;right:0;height:66px;padding:9px 20px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(#0b1419ee,#0b1419a0,transparent);pointer-events:none}
+.brand{font-size:13px;letter-spacing:.17em;font-weight:900}.brand span{color:var(--gold)}
+#stats{display:flex;gap:8px}.stat{min-width:84px;padding:6px 10px;background:#17252bdc;border:1px solid #52635c;border-radius:8px;font-size:9px;letter-spacing:.1em;color:#b8c4bd}.stat b{display:block;font-size:15px;color:#fff;letter-spacing:0;margin-top:2px}
+#bottom{position:fixed;left:0;right:0;bottom:0;padding:13px 20px 17px;display:flex;align-items:end;justify-content:space-between;gap:12px;background:linear-gradient(0deg,#0b1419f5,transparent);pointer-events:none}
+.objective{max-width:min(600px,60vw);padding:10px 14px;border-left:3px solid var(--gold);background:#111e24e8;border-radius:0 8px 8px 0}.eyebrow{font-size:9px;letter-spacing:.18em;color:var(--gold);font-weight:900}.objective strong{display:block;font-size:14px;margin-top:4px}.objective small{display:block;color:#aab8b1;font-size:11px;margin-top:3px}
+#interact{pointer-events:auto;border:1px solid #c79b53;background:linear-gradient(#e8bd70,#b47f3e);color:#172126;border-radius:8px;padding:13px 19px;font-weight:950;letter-spacing:.08em;font-size:12px;box-shadow:0 5px 20px #0007}
+#controls{position:fixed;bottom:91px;left:18px;display:flex;gap:8px;pointer-events:auto; -webkit-user-select:none;user-select:none}#controls button{width:52px;height:46px;border:1px solid #87978e88;border-radius:9px;background:#14252cdd;color:#f0f5ef;font-size:22px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;appearance:none;outline:none}#controls button:focus,#controls button:focus-visible{outline:none;box-shadow:none}#controls button:active{background:#14252cdd;color:#f0f5ef}
+#hint{position:fixed;top:76px;left:50%;transform:translateX(-50%);font-size:11px;color:#e1e9e1;background:#17272ddd;border:1px solid #53665c;padding:8px 13px;border-radius:7px;opacity:0;transition:opacity .18s;pointer-events:none;white-space:nowrap}#hint.show{opacity:1}
+#toast{position:fixed;top:48%;left:50%;transform:translate(-50%,-50%);padding:13px 18px;background:#15272eee;border:1px solid var(--gold);border-radius:9px;font-size:13px;max-width:85vw;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}#toast.on{opacity:1}
+.screen{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 35%,#304449ed,#0b1318f7);padding:18px;overflow:auto}
+.panel{width:min(620px,95vw);max-height:94vh;overflow:auto;padding:clamp(20px,4vw,34px);background:linear-gradient(145deg,#1d3035,#111d22);border:1px solid #586a60;border-radius:15px;box-shadow:0 30px 100px #000b}
+.kicker{font-size:10px;letter-spacing:.22em;color:var(--gold);font-weight:900}.panel h1{font-size:clamp(29px,6vw,48px);line-height:1.02;margin:11px 0}.panel p{color:#b5c2bb;line-height:1.55;font-size:14px}
+.characters{display:flex;gap:9px;margin:13px 0}.characters button{flex:1;background:#293d40;border:1px solid #5b7065;border-radius:8px;padding:10px 3px;color:#f0f5ef;font-size:24px}.characters button.sel{border-color:var(--gold);background:#3b493e}.characters small{display:block;font-size:9px;color:#bac6bd;margin-top:4px}
+.panel input{width:100%;padding:12px;background:#0d191e;border:1px solid #52645d;border-radius:7px;color:white;font-size:16px;margin:7px 0 14px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}.primary,.secondary{border:0;border-radius:7px;padding:13px 17px;font-weight:950;letter-spacing:.07em}.primary{background:var(--gold);color:#172126}.secondary{background:#2b4144;color:#e8f0e9;border:1px solid #63786b}
+.hidden{display:none!important}
+.tutorial-list{display:grid;gap:10px;margin:15px 0}.tip{display:flex;gap:11px;align-items:flex-start;padding:10px;background:#263a3e;border:1px solid #435a52;border-radius:8px}.tip b{color:var(--gold);font-size:17px;min-width:24px}.tip span{font-size:13px;color:#d2ddd5;line-height:1.4}
+.cutscene{min-height:230px;border-radius:10px;border:1px solid #53675c;background:linear-gradient(130deg,#30474a,#17272c);padding:20px;display:flex;flex-direction:column;justify-content:center;text-align:center;margin:15px 0}.cutscene .emoji{font-size:56px;margin-bottom:10px}.cutscene h2{margin:0 0 8px;font-size:22px}.cutscene p{margin:0}
+#progress{height:5px;background:#33474a;border-radius:9px;overflow:hidden;margin:12px 0}#progress i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+@media(max-width:700px){#top{padding:7px 9px;height:55px}.brand{font-size:9px}.stat{min-width:57px;padding:5px 6px;font-size:8px}.stat b{font-size:12px}#bottom{padding:8px 9px 10px}.objective{max-width:57vw;padding:7px 9px}.objective strong{font-size:10px}.objective small{font-size:9px}#interact{padding:12px 12px;font-size:10px}#controls{left:9px;bottom:75px;gap:5px}#controls button{width:44px;height:41px}.panel{padding:20px}.characters button{font-size:21px}}
+
+#cover{background:radial-gradient(ellipse at 50% 38%,#3d5b54 0%,#172b31 48%,#081116 100%);text-align:center;z-index:40}
+.cover-panel{width:min(900px,94vw);padding:clamp(24px,5vw,56px);border:1px solid #84917a;border-radius:20px;background:linear-gradient(145deg,#203b3bdf,#101e24f2);box-shadow:0 25px 100px #000b;position:relative;overflow:hidden}
+.cover-panel:before{content:"";position:absolute;inset:auto -8% -80px;height:170px;background:repeating-linear-gradient(90deg,#d6a64b22 0 28px,transparent 28px 56px);transform:skewY(-7deg);pointer-events:none}
+.cover-panel>*{position:relative;z-index:1}
+#coverStart{position:relative;z-index:5;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+.cover-mark{font-size:clamp(48px,10vw,100px);margin:0 0 12px;filter:drop-shadow(0 8px 12px #0008)}
+.cover-title{font-size:clamp(30px,7vw,64px);line-height:1.02;font-weight:1000;letter-spacing:-.04em;margin:10px 0;color:#f2d17e;text-shadow:0 4px 0 #76532a,0 10px 24px #0009}
+.cover-credit{font-size:clamp(13px,2.5vw,20px);letter-spacing:.08em;color:#e5eee5;margin:18px 0 28px;font-weight:800}
+#coverStart{font-size:16px;padding:16px 38px;min-width:190px;box-shadow:0 7px 0 #8b642f,0 12px 25px #0007}
+.audio-note{margin-top:20px;color:#aebdb3;font-size:11px}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="top"><div class="brand">TURNO <span>/</span> DE PRODUÇÃO</div><div id="stats"><div class="stat">TEMPO<b id="timer">03:00</b></div><div class="stat">QUALIDADE<b id="lives">● ● ●</b></div><div class="stat">PONTOS<b id="score">000</b></div></div></div>
+<div id="hint"></div>
+<div id="bottom"><div class="objective"><div class="eyebrow">ORDEM DE PRODUÇÃO</div><strong id="task">Aguardando início do turno</strong><small id="subtask">Escolha seu operador e inicie a missão.</small></div><button id="interact">AÇÃO · E</button></div>
+<div id="controls"><button data-move="-1" aria-label="Mover para esquerda">◀</button><button data-move="1" aria-label="Mover para direita">▶</button></div>
+<div id="toast"></div>
+
+<div class="screen" id="cover"><div class="cover-panel">
+<div class="cover-mark">🏭</div><div class="kicker">SIMULADOR 2D · SENAI</div>
+<div class="cover-title">TURNO<br>DE PRODUÇÃO</div>
+<div class="cover-credit">Um jogo feito pela turma de XLP - SENAI</div>
+<button class="primary" id="coverStart">COMEÇAR ▶</button>
+<div class="audio-note">Prepare-se para entrar no chão de fábrica!</div>
+</div></div>
+
+<div class="screen hidden" id="mainMenu"><div class="panel">
+<div class="kicker">SIMULADOR INDUSTRIAL · 2D</div><h1>Um turno.<br>Uma equipe.<br>Uma missão.</h1>
+<p>Entre no chão de fábrica, cumpra sua função e mantenha o fluxo de produção. Cada etapa importa: qualidade, reaproveitamento e organização.</p>
+<div class="kicker">ESCOLHA SEU OPERADOR</div>
+<div class="characters"><button class="sel" data-char="👨🏽‍🏭">👨🏽‍🏭<small>RAFAEL</small></button><button data-char="👩🏽‍🏭">👩🏽‍🏭<small>BIANCA</small></button><button data-char="🧑🏻‍🏭">🧑🏻‍🏭<small>CAIO</small></button></div>
+<label for="name" class="kicker">NOME DO OPERADOR</label><input id="name" maxlength="18" value="Operador">
+<div class="actions"><button class="primary" id="start">INICIAR TURNO →</button><button class="secondary" id="openTutorial">COMO JOGAR</button><button class="secondary" id="openCutscene">VER INTRODUÇÃO ▶</button></div>
+</div></div>
+
+<div class="screen hidden" id="tutorial"><div class="panel">
+<div class="kicker">MANUAL DO OPERADOR</div><h1>Como jogar</h1>
+<div class="tutorial-list">
+<div class="tip"><b>01</b><span><strong>Movimente-se:</strong> use as setas na tela ou as teclas A/D. No computador, também pode usar ← e →.</span></div>
+<div class="tip"><b>02</b><span><strong>Interaja:</strong> aproxime-se de uma estação e toque em AÇÃO ou aperte E/Enter.</span></div>
+<div class="tip"><b>03</b><span><strong>Cumpra sua função:</strong> o jogo sorteia acabamento, injeção ou reaproveitamento de borra. Siga a ordem exibida no rodapé.</span></div>
+<div class="tip"><b>04</b><span><strong>Feche o turno:</strong> depois da sua tarefa, faça a pausa, separe recicláveis e rejeitos em recipientes diferentes, embale e envie o lote.</span></div>
+<div class="tip"><b>05</b><span><strong>Evite erros:</strong> ações fora da sequência reduzem a qualidade. O tempo e as vidas aparecem no topo.</span></div>
+</div>
+<div class="actions"><button class="primary" id="closeTutorial">ENTENDI</button><button class="secondary" id="tutorialCutscene">VER INTRODUÇÃO</button></div>
+</div></div>
+
+<div class="screen hidden" id="cutscene"><div class="panel">
+<div class="kicker">ANTES DO PRIMEIRO TURNO</div><h1>O fluxo da fábrica</h1>
+<div id="progress"><i id="progressBar"></i></div>
+<div class="cutscene"><div class="emoji" id="sceneEmoji">🏭</div><h2 id="sceneTitle">Bem-vindo à produção</h2><p id="sceneText">Você está entrando em um turno de trabalho. Cada operador tem uma responsabilidade importante para manter a produção segura e organizada.</p></div>
+<div class="actions"><button class="secondary" id="skipScene">PULAR</button><button class="primary" id="nextScene">PRÓXIMO →</button></div>
+</div></div>
+
+<div class="screen hidden" id="result"><div class="panel"><div class="kicker">RELATÓRIO DO TURNO</div><h1 id="resultTitle">Turno concluído!</h1><p id="resultText"></p><div class="actions" id="resultActions"><button class="primary" id="again">JOGAR NOVAMENTE</button><button class="secondary" id="menu">MENU PRINCIPAL</button></div></div></div>
+
+<script>
+(()=> {
+const canvas=document.querySelector('#game'),c=canvas.getContext('2d');
+const $=s=>document.querySelector(s);
+let W=innerWidth,H=innerHeight,dpr=1,scale=1,cam=0,last=0,active=false,move=0,toastTimer=0;
+const WORLD=2850,GROUND=548,PLAYER_Y=GROUND;
+let player={x:120,y:PLAYER_Y,dir:1,walk:0},chosen='👨🏽‍🏭',name='Operador',role=0,score=0,lives=3,remaining=180;
+let parts=0,scrap=0,drumReady=false,groundTrash=false,recycled=false,rejects=false,packed=false,stage='work',near=null;
+// O jogo funciona totalmente offline: sem salas, contas ou conexão externa.
+const audio={ctx:null,musicTimer:null,factoryTimer:null,musicStep:0,musicGain:null,factoryNodes:[]};
+function audioContext(){if(!audio.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;audio.ctx=new AC()}if(audio.ctx.state==='suspended')audio.ctx.resume();return audio.ctx}
+function tone(freq,duration=0.18,type='sine',volume=0.035,when=0){const ctx=audioContext();if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+when;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(volume,t+0.018);g.gain.exponentialRampToValueAtTime(0.0001,t+duration);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+duration+0.03)}
+function stopMenuMusic(){if(audio.musicTimer){clearInterval(audio.musicTimer);audio.musicTimer=null}if(audio.musicGain&&audio.ctx){audio.musicGain.gain.setTargetAtTime(0,audio.ctx.currentTime,0.08);audio.musicGain=null}}
+function startMenuMusic(){const ctx=audioContext();if(!ctx||audio.musicTimer)return;stopFactorySound();const notes=[523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,523.25,587.33,659.25,783.99,698.46,659.25,587.33,493.88];audio.musicStep=0;const play=()=>{if(!audio.musicTimer)return;const n=notes[audio.musicStep%notes.length];tone(n,.22,'triangle',.025);tone(n*2,.12,'sine',.008,.04);if(audio.musicStep%4===0)tone(130.81,.13,'sine',.012);audio.musicStep++};audio.musicTimer=setInterval(play,260);play()}
+function stopFactorySound(){if(audio.factoryTimer){clearInterval(audio.factoryTimer);audio.factoryTimer=null}for(const n of audio.factoryNodes){try{n.stop?.();n.disconnect?.()}catch(e){}}audio.factoryNodes=[]}
+function startFactorySound(){stopMenuMusic();stopFactorySound();const ctx=audioContext();if(!ctx)return;const hum=ctx.createOscillator(),hg=ctx.createGain(),filter=ctx.createBiquadFilter();hum.type='sawtooth';hum.frequency.value=54;filter.type='lowpass';filter.frequency.value=170;hg.gain.value=.018;hum.connect(filter);filter.connect(hg);hg.connect(ctx.destination);hum.start();audio.factoryNodes.push(hum);const pulse=ctx.createOscillator(),pg=ctx.createGain();pulse.type='triangle';pulse.frequency.value=2.2;pg.gain.value=.012;pulse.connect(pg);pg.connect(ctx.destination);pulse.start();audio.factoryNodes.push(pulse);audio.factoryTimer=setInterval(()=>{tone(95+Math.random()*25,.12,'square',.012);tone(430+Math.random()*150,.055,'triangle',.008,.04);if(Math.random()>.45)tone(62,.22,'sawtooth',.018,.09)},850)}
+function nameFromMenu(){return ($('#name').value.trim()||'Operador').slice(0,18)}
+const roles=['Remover rebarbas das peças','Injetar 3 peças e recolher a borra','Triturar e armazenar borra para reutilização'];
+const stations=[
+{x:340,label:'INJETORA',type:'inject',w:170},{x:690,label:'ACABAMENTO',type:'finish',w:180},
+{x:1030,label:'TAMBOR DE BORRA',type:'drum',w:150},{x:1390,label:'TRITURADOR',type:'grind',w:170},
+{x:1740,label:'EMBALAGEM',type:'pack',w:180},{x:2070,label:'EXPEDIÇÃO',type:'ship',w:180},
+{x:2390,label:'REFEITÓRIO',type:'lunch',w:160},{x:2610,label:'RECICLÁVEIS',type:'recycle',w:150},{x:2780,label:'REJEITOS',type:'trash',w:130}
+];
+const scenes=[
+['🏭','Bem-vindo à produção','Você está entrando em um turno de trabalho. Cada operador tem uma responsabilidade importante para manter a produção segura e organizada.'],
+['🧑🏽‍🏭','Sua função foi sorteada','Você receberá uma tarefa: acabamento, injeção de peças com coleta de borra ou trituração e armazenamento para reutilização.'],
+['♻️','Organização também é produção','Depois da tarefa, faça a pausa e separe recicláveis e rejeitos em recipientes diferentes. Só então embale e envie o lote.']
+];let sceneIndex=0;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);W=innerWidth;H=innerHeight;scale=Math.min(W/1280,H/720);c.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+function round(x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect(x,y,w,h,r);c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=2;c.stroke()}}
+function txt(t,x,y,size,color='#e5ece5',align='left',weight='700'){c.fillStyle=color;c.font=`${weight} ${size}px system-ui`;c.textAlign=align;c.fillText(t,x,y)}
+function machine(x,y,w,h,label){round(x,y,w,h,9,'#35494b','#7d9184');round(x+9,y+9,w-18,h-18,6,'#26383b','#61756b');round(x+w*.25,y+35,w*.5,h-75,4,'#111e22','#75877a');round(x+w*.29,y+42,w*.42,h-88,3,'#607b74','#9aac91');c.fillStyle='#d5ae62';c.fillRect(x+17,y+h-27,w-34,7);c.fillStyle='#cf7157';c.beginPath();c.arc(x+w-25,y+24,5,0,Math.PI*2);c.fill();txt(label,x+w/2,y+h+20,11,'#e0e8dd','center','900')}
+function drawBackground(){
+let g=c.createLinearGradient(0,0,0,720);g.addColorStop(0,'#2c4143');g.addColorStop(.62,'#263638');g.addColorStop(1,'#1b292b');c.fillStyle=g;c.fillRect(0,0,1280,720);
+for(let x=-((cam*.22)%260)-260;x<1540;x+=260){round(x,105,160,205,5,'#344b4d','#526b60');round(x+17,124,126,145,3,'#1c3034','#637b6d');c.fillStyle='#a0b6a5';c.fillRect(x+28,137,104,4);c.fillStyle='#465e5d';c.fillRect(x+28,151,104,106);c.fillStyle='#8da99c';c.fillRect(x+78,151,3,106);c.fillRect(x+28,202,104,3)}
+c.fillStyle='#152427';c.fillRect(0,70,1280,18);for(let x=35;x<1280;x+=230){c.fillStyle='#5b7067';c.fillRect(x,88,8,255);c.fillStyle='#d4ae66';c.fillRect(x-7,80,22,5)}
+for(let x=100-(cam*.12%500);x<1450;x+=500){round(x,145,175,105,5,'#68837a','#a1b2a0');c.fillStyle='#9ebbb0';c.fillRect(x+8,153,159,88);c.strokeStyle='#3a5554';c.lineWidth=5;c.strokeRect(x+8,153,159,88);c.beginPath();c.moveTo(x+88,153);c.lineTo(x+88,241);c.moveTo(x+8,197);c.lineTo(x+167,197);c.stroke()}
+}
+function drawFloor(){
+/* Piso contínuo: o chão acompanha a câmera e o pé do personagem fica exatamente nesta linha. */
+c.fillStyle='#46534d';c.fillRect(0,GROUND,1280,172);
+c.fillStyle='#5c6a60';c.fillRect(0,GROUND,1280,7);
+c.fillStyle='#303e3b';c.fillRect(0,GROUND+7,1280,165);
+for(let x=-(cam%100);x<1350;x+=100){c.strokeStyle='#647169';c.lineWidth=2;c.beginPath();c.moveTo(x,GROUND+9);c.lineTo(x+42,720);c.stroke()}
+c.fillStyle='#d5b35e';c.fillRect(0,GROUND-5,1280,5);
+for(let x=-(cam%120);x<1350;x+=120){round(x+12,GROUND+28,48,7,2,'#d3ad56')}
+}
+function drawStation(s){let x=s.x-cam,y=GROUND;if(x<-240||x>1520)return;
+if(s.type==='inject'){machine(x-74,y-235,148,215,'INJETORA 01');round(x-55,y-19,110,15,4,'#26383a','#7a8c7d')}
+else if(s.type==='finish'){round(x-91,y-125,182,103,8,'#52665d','#a0ad99');round(x-72,y-108,144,66,5,'#263b3b','#75887a');for(let i=0;i<3;i++)round(x-52+i*43,y-92,32,34,4,'#a77d4c','#d2b16f');txt('BANCADA DE QUALIDADE',x,y-3,10,'#ecf0e8','center','900')}
+else if(s.type==='drum'){round(x-48,y-123,96,119,15,'#9a7947','#d5bd7e');round(x-39,y-116,78,18,8,'#34484a','#c4b184');txt('BORRA',x,y-65,13,'#fff0c7','center','900');txt('PLÁSTICA',x,y-46,9,'#fff0c7','center','800')}
+else if(s.type==='grind'){machine(x-77,y-176,154,155,'TRITURADOR');round(x-48,y-19,96,17,4,'#617b68','#b1c09e')}
+else if(s.type==='pack'){round(x-88,y-95,176,73,7,'#738579','#b4c0a8');for(let i=0;i<3;i++)round(x-62+i*48,y-70,37,38,3,'#b58e55','#e3c990');txt('EMBALAGEM',x,y-5,11,'#f0f3e9','center','900')}
+else if(s.type==='ship'){round(x-86,y-151,172,126,9,'#58777a','#a4b5a5');round(x-67,y-130,134,79,5,'#304a4d','#879b8b');txt('DOCA 02',x,y-90,15,'#e8eee4','center','900');round(x-58,y-25,116,16,3,'#b88e50','#e1c58b')}
+else{let col=s.type==='lunch'?'#718b75':s.type==='recycle'?'#3c9274':'#66777a';round(x-59,y-115,118,111,9,col,'#b2c0ad');txt(s.type==='lunch'?'PAUSA':s.type==='recycle'?'RECICLÁVEL':'REJEITO',x,y-64,12,'#f5f5e9','center','900');txt(s.type==='lunch'?'REFEITÓRIO':'COLETA',x,y-43,9,'#e1e8dd','center','800')}
+}
+function drawCharacter(){let x=player.x-cam,y=GROUND,step=Math.sin(player.walk)*5;c.save();c.translate(x,y);if(player.dir<0)c.scale(-1,1);
+c.fillStyle='#0006';c.beginPath();c.ellipse(0,-1,19,5,0,0,Math.PI*2);c.fill();
+/* Pernas terminam na linha do piso: sem flutuar nem afundar. */
+c.strokeStyle='#18272a';c.lineWidth=10;c.lineCap='round';c.beginPath();c.moveTo(-7,-29);c.lineTo(-9+step,-5);c.moveTo(7,-29);c.lineTo(10-step,-5);c.stroke();
+round(-20,-70,40,44,7,'#b17b48','#e3bd77');round(-21,-69,42,8,3,'#e4c47
