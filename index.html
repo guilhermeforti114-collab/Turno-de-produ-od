@@ -30,15 +30,17 @@
 #progress{height:5px;background:#33474a;border-radius:9px;overflow:hidden;margin:12px 0}#progress i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
 @media(max-width:700px){#top{padding:7px 9px;height:55px}.brand{font-size:9px}.stat{min-width:57px;padding:5px 6px;font-size:8px}.stat b{font-size:12px}#bottom{padding:8px 9px 10px}.objective{max-width:57vw;padding:7px 9px}.objective strong{font-size:10px}.objective small{font-size:9px}#interact{padding:12px 12px;font-size:10px}#controls{left:9px;bottom:75px;gap:5px}#controls button{width:44px;height:41px}.panel{padding:20px}.characters button{font-size:21px}}
 
+
 #cover{background:radial-gradient(ellipse at 50% 38%,#3d5b54 0%,#172b31 48%,#081116 100%);text-align:center;z-index:40}
 .cover-panel{width:min(900px,94vw);padding:clamp(24px,5vw,56px);border:1px solid #84917a;border-radius:20px;background:linear-gradient(145deg,#203b3bdf,#101e24f2);box-shadow:0 25px 100px #000b;position:relative;overflow:hidden}
 .cover-panel:before{content:"";position:absolute;inset:auto -8% -80px;height:170px;background:repeating-linear-gradient(90deg,#d6a64b22 0 28px,transparent 28px 56px);transform:skewY(-7deg);pointer-events:none}
 .cover-panel>*{position:relative;z-index:1}
-#coverStart{position:relative;z-index:5;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+#coverStart{position:relative;z-index:60;pointer-events:auto;touch-action:manipulation;cursor:pointer; -webkit-tap-highlight-color:transparent}
 .cover-mark{font-size:clamp(48px,10vw,100px);margin:0 0 12px;filter:drop-shadow(0 8px 12px #0008)}
 .cover-title{font-size:clamp(30px,7vw,64px);line-height:1.02;font-weight:1000;letter-spacing:-.04em;margin:10px 0;color:#f2d17e;text-shadow:0 4px 0 #76532a,0 10px 24px #0009}
 .cover-credit{font-size:clamp(13px,2.5vw,20px);letter-spacing:.08em;color:#e5eee5;margin:18px 0 28px;font-weight:800}
 #coverStart{font-size:16px;padding:16px 38px;min-width:190px;box-shadow:0 7px 0 #8b642f,0 12px 25px #0007}
+#start{cursor:pointer;touch-action:manipulation}
 .audio-note{margin-top:20px;color:#aebdb3;font-size:11px}
 </style>
 </head>
@@ -148,6 +150,74 @@ else{let col=s.type==='lunch'?'#718b75':s.type==='recycle'?'#3c9274':'#66777a';r
 }
 function drawCharacter(){let x=player.x-cam,y=GROUND,step=Math.sin(player.walk)*5;c.save();c.translate(x,y);if(player.dir<0)c.scale(-1,1);
 c.fillStyle='#0006';c.beginPath();c.ellipse(0,-1,19,5,0,0,Math.PI*2);c.fill();
-/* Pernas terminam na linha do piso: sem flutuar nem afundar. */
-c.strokeStyle='#18272a';c.lineWidth=10;c.lineCap='round';c.beginPath();c.moveTo(-7,-29);c.lineTo(-9+step,-5);c.moveTo(7,-29);c.lineTo(10-step,-5);c.stroke();
-round(-20,-70,40,44,7,'#b17b48','#e3bd77');round(-21,-69,42,8,3,'#e4c47
+/* Pernas terminam na linha do piso: sem flutuar nem afundar. */step,-5);c.stroke();
+round(-20,-70,40,44,7,'#b17b48','#e3bd77');round(-21,-69,42,8,3,'#e4c47e');
+c.strokeStyle='#d6a984';c.lineWidth=7;c.beginPath();c.moveTo(-18,-61);c.lineTo(-26,-38);c.moveTo(18,-61);c.lineTo(25,-39);c.stroke();
+c.fillStyle='#c9916e';c.beginPath();c.arc(0,-84,14,0,Math.PI*2);c.fill();c.fillStyle='#dcb96c';c.beginPath();c.arc(0,-91,16,Math.PI,Math.PI*2);c.fill();c.fillRect(-16,-93,32,5);
+c.fillStyle='#243236';c.fillRect(-7,-85,3,3);c.fillRect(5,-85,3,3);txt(chosen,0,-105,19,'#ffffff','center','700');c.restore()}
+function render(){let ox=(W-1280*scale)/2,oy=(H-720*scale)/2;c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle='#10191e';c.fillRect(0,0,W,H);c.translate(ox,oy);c.scale(scale,scale);c.save();c.beginPath();c.rect(0,0,1280,720);c.clip();drawBackground();drawFloor();stations.forEach(drawStation);drawCharacter();c.restore();c.setTransform(dpr,0,0,dpr,0,0)}
+function toast(t){$('#toast').textContent=t;$('#toast').classList.add('on');toastTimer=2.5}
+function updateTask(){
+let task=roles[role],desc='';
+if(stage==='work'){
+if(role===0)desc=`Acabamento: ${parts}/3 peças concluídas.`;
+if(role===1)desc=`Injeção: ${parts}/3 peças · borra coletada: ${scrap}/3.`;
+if(role===2)desc=drumReady?'Borra recebida. Leve ao triturador.':'Retire o lote de borra identificado no tambor.';
+}else if(stage==='waste')desc=`Pausa feita. Recicláveis: ${recycled?'OK':'pendente'} · Rejeitos: ${rejects?'OK':'pendente'}.`;
+else if(stage==='pack')desc='Separação concluída. Embale e identifique o lote.';
+else if(stage==='ship')desc='Lote embalado. Leve para a expedição.';
+$('#task').textContent=task;$('#subtask').textContent=desc;
+$('#score').textContent=String(score).padStart(3,'0');$('#lives').textContent='● '.repeat(lives).trim();
+}
+function closest(){let best=null,d=1e9;for(const s of stations){let n=Math.abs(s.x-player.x);if(n<d){d=n;best=s}}return d<125?best:null}
+function workDone(){return stage!=='work'}
+function start(){name=$('#name').value.trim()||'Operador';startFactorySound();role=Math.floor(Math.random()*3);score=0;lives=3;remaining=180;parts=0;scrap=0;drumReady=false;groundTrash=false;recycled=false;rejects=false;packed=false;stage='work';player.x=120;player.dir=1;player.walk=0;cam=0;active=true;$('#mainMenu').classList.add('hidden');$('#cover').classList.add('hidden');$('#result').classList.add('hidden');updateTask();toast(`${name}, sua função: ${roles[role]}. Siga as instruções no rodapé.`);last=performance.now();requestAnimationFrame(loop)}
+function loseLife(msg){lives--;toast(msg);if(lives<=0)end(false)}
+function interact(){if(!active)return;let s=closest();if(!s){toast('Aproxime-se de uma estação para interagir.');return}let ok=false;
+if(stage==='work'){
+if(role===0&&s.type==='finish'&&parts<3){parts++;score+=10;ok=true;toast(`Rebarba removida: ${parts}/3 peças.`);if(parts===3){stage='waste';toast('Acabamento concluído! Agora faça a pausa e separe os resíduos.');}}
+else if(role===1&&s.type==='inject'&&parts<3){parts++;scrap++;score+=10;ok=true;toast(`Peça injetada: ${parts}/3. Borra recolhida e identificada.`);if(parts===3){toast('Três peças injetadas. Deposite a borra recolhida no tambor identificado.')}}
+else if(role===2&&s.type==='drum'&&!drumReady){drumReady=true;score+=10;ok=true;toast('Lote de borra identificado e recebido. Leve ao triturador.')}
+else if(role===2&&s.type==='grind'&&drumReady){drumReady=false;stage='waste';score+=25;ok=true;toast('Borra triturada e armazenada para reutilização. Agora faça a pausa.')}
+else if(role===1&&s.type==='drum'&&parts===3&&scrap>0){scrap=0;stage='waste';score+=10;ok=true;toast('Borra depositada no tambor identificado. Agora faça a pausa e separe os resíduos.')}
+}
+else if(stage==='waste'){
+if(s.type==='lunch'&&!groundTrash){groundTrash=true;ok=true;score+=5;toast('Pausa realizada. Agora separe os dois tipos de resíduos.')}
+else if(s.type==='recycle'&&groundTrash&&!recycled){recycled=true;ok=true;score+=5;toast('Recicláveis separados no recipiente correto.')}
+else if(s.type==='trash'&&groundTrash&&!rejects){rejects=true;ok=true;score+=5;toast('Rejeitos separados no recipiente correto.')}
+if(recycled&&rejects){stage='pack';groundTrash=false;toast('Separação completa! Agora embale e identifique o lote.')}
+}
+else if(stage==='pack'&&s.type==='pack'&&!packed){packed=true;stage='ship';score+=15;ok=true;toast('Lote embalado e identificado. Siga para a expedição.')}
+else if(stage==='ship'&&s.type==='ship'&&packed){score+=30;ok=true;end(true);return}
+if(!ok)loseLife('Etapa incorreta ou fora da sequência. Confira a ordem de produção.');updateTask()}
+function end(won){active=false;move=0;stopFactorySound();$('#resultTitle').textContent=won?'Turno concluído!':'Turno encerrado';$('#resultText').textContent=won?`Parabéns, ${name}! Você concluiu sua função, separou os resíduos, embalou e enviou o lote. Pontuação: ${score}.`:`${name}, suas vidas acabaram. Revise a sequência e tente novamente. Pontuação: ${score}.` ;$('#resultActions').classList.remove('hidden');$('#result').classList.remove('hidden')}
+function loop(now){if(!active){render();return}let dt=Math.min((now-last)/1000,.05);last=now;remaining-=dt;if(remaining<=0){remaining=180;loseLife('Tempo do ciclo excedido. Reorganize as etapas.');if(!active)return}
+if(move){player.x+=move*250*dt;player.dir=move;player.walk+=dt*11}player.x=Math.max(45,Math.min(WORLD-45,player.x));cam=Math.max(0,Math.min(WORLD-1280,player.x-420));near=closest();
+$('#hint').classList.toggle('show',!!near);$('#hint').textContent=near?`${near.label} · AÇÃO / E`:'Use ◀ ▶ ou A / D para caminhar';
+$('#timer').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(Math.floor(remaining%60)).padStart(2,'0')}`;
+if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('#toast').classList.remove('on')}
+render();requestAnimationFrame(loop)}
+function showScene(){sceneIndex=0;paintScene();$('#cutscene').classList.remove('hidden')}
+function paintScene(){let s=scenes[sceneIndex];$('#sceneEmoji').textContent=s[0];$('#sceneTitle').textContent=s[1];$('#sceneText').textContent=s[2];$('#progressBar').style.width=((sceneIndex+1)/scenes.length*100)+'%';$('#nextScene').textContent=sceneIndex===scenes.length-1?'CONCLUIR ✓':'PRÓXIMO →'}
+function closeScene(){ $('#cutscene').classList.add('hidden')}
+document.querySelectorAll('[data-char]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-char]').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');chosen=b.dataset.char});
+function enterMainMenu(e){if(e){e.preventDefault();e.stopPropagation()}const cover=$('#cover'),menu=$('#mainMenu');if(!cover||!menu)return;cover.classList.add('hidden');menu.classList.remove('hidden');try{startMenuMusic()}catch(err){console.warn('Áudio do menu indisponível:',err)}}
+$('#coverStart').addEventListener('click',enterMainMenu);
+$('#coverStart').addEventListener('pointerup',function(e){if(e.pointerType==='touch')enterMainMenu(e)});
+$('#start').onclick=()=>{name=nameFromMenu();start()};$('#interact').onclick=interact;
+
+$('#openTutorial').onclick=()=>$('#tutorial').classList.remove('hidden');$('#closeTutorial').onclick=()=>$('#tutorial').classList.add('hidden');
+$('#openCutscene').onclick=showScene;$('#tutorialCutscene').onclick=()=>{$('#tutorial').classList.add('hidden');showScene()};
+$('#nextScene').onclick=()=>{if(sceneIndex<scenes.length-1){sceneIndex++;paintScene()}else closeScene()};
+$('#skipScene').onclick=closeScene;
+$('#again').onclick=start;$('#menu').onclick=()=>{$('#result').classList.add('hidden');$('#mainMenu').classList.remove('hidden');startMenuMusic()};
+document.querySelectorAll('[data-move]').forEach(b=>{let v=Number(b.dataset.move);b.addEventListener('contextmenu',e=>e.preventDefault());b.addEventListener('selectstart',e=>e.preventDefault());b.addEventListener('pointerdown',e=>{e.preventDefault();move=v;try{b.setPointerCapture(e.pointerId)}catch(_){}});const stop=()=>{move=0};['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,stop));});
+addEventListener('keydown',e=>{if(['ArrowRight','ArrowLeft',' ','Enter'].includes(e.key))e.preventDefault();if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')move=1;if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')move=-1;if((e.key.toLowerCase()==='e'||e.key==='Enter'||e.key===' ')&&active)interact()});
+addEventListener('keyup',e=>{if(['ArrowRight','ArrowLeft','a','d'].includes(e.key)||['a','d'].includes(e.key.toLowerCase()))move=0});
+addEventListener('blur',()=>move=0);
+render();
+})();
+</script>
+</body>
+</html>
+c.strokeStyle='#18272a';c.lineWidth=10;c.lineCap='round';c.beginPath();c.moveTo(-7,-29);c.lineTo(-9+step,-5);c.moveTo(7,-29);c.lineTo(10-
